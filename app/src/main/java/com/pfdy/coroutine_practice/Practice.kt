@@ -8,7 +8,12 @@ fun main() {
     val time = measureTimeMillis{
         runBlocking {
             println("Weather forecast")
-            println(getWeatherReport())
+            try {
+                println(getWeatherReport())
+            } catch (e: AssertionError) {
+                println("Caught exception in runBlocking(): $e")
+                println("Report unavailable at this time")
+            }
             println("Have a good day!")
         }
     }
@@ -17,7 +22,14 @@ fun main() {
 
 suspend fun getWeatherReport() = coroutineScope {
     val forecast : Deferred<String> = async { getForecast() }
-    val temperature : Deferred<String> = async { getTemperature() }
+    val temperature : Deferred<String> = async {
+        try {
+            getTemperature()
+        } catch (e: AssertionError) {
+            println("Caught exception $e")
+            "{ No temperature found }"
+        }
+    }
     "${forecast.await()} ${temperature.await()}"
 }
 
@@ -27,6 +39,7 @@ suspend fun getForecast(): String {
 }
 
 suspend fun getTemperature(): String {
-    delay(1000)
+    delay(500)
+    throw AssertionError("Temperature is invalid")
     return "30\u00b0C"
 }
